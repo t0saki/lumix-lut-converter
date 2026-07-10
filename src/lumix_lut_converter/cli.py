@@ -15,14 +15,14 @@ from .empirical import convert_collection_with_empirical_adapter, fit_empirical_
 
 app = typer.Typer(
     no_args_is_help=True,
-    help="Rebase Panasonic V-Log creative LUTs for LUMIX Like709 in-camera use.",
+    help="Explore and convert Panasonic LUMIX LUT colour pipelines.",
 )
 console = Console()
 
 
 @app.callback()
 def main() -> None:
-    """Panasonic LUMIX LUT base conversion tools."""
+    """Colour-science tools for Panasonic LUMIX LUT workflows."""
 
 
 @app.command()
@@ -160,7 +160,7 @@ def convert_cst(
     grid_size: int = typer.Option(33, min=2, max=65),
     std_folder: str = typer.Option("5_STD-base"),
 ) -> None:
-    """Rebase V-Log LUTs to Standard/sRGB with the official analytic CST."""
+    """Rebase V-Log LUTs using Panasonic's published V-Log/V-Gamut model."""
     summary = convert_collection_srgb_cst(
         source,
         output,

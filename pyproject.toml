@@ -1,7 +1,7 @@
 [project]
 name = "lumix-lut-converter"
-version = "0.1.0"
-description = "High-precision Panasonic V-Log LUT rebasing for LUMIX Like709 in-camera use"
+version = "0.2.0"
+description = "Open colour-science exploration and V-Log LUT conversion for Panasonic LUMIX"
 readme = "README.md"
 authors = [
     { name = "Zhengxiao Wu", email = "15712521+t0saki@users.noreply.github.com" }
