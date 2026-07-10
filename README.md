@@ -72,8 +72,41 @@ uv run lumix-lut-converter generate-targets \
   --width 3840 --height 2160 --cube-levels 9
 ```
 
-输出包含带 sRGB ICC 的 SDR PNG、全屏查看器、机器可读色块坐标、相机参考 LUT
-和三组拍摄清单，用于标定 S9 实际的 V-Log/V709、Like709 与 Standard 管线。
+输出包含带 sRGB ICC 的 SDR PNG、全屏查看器、机器可读色块坐标、可选解析参考 LUT
+和三组拍摄清单，用于标定 S9 实际的原生 V-Log、Like709 与 Standard 管线。
+
+## 使用相机实拍标定 Standard Base
+
+先定位四角标记并提取每个色块：
+
+```bash
+uv run lumix-lut-converter analyze-captures \
+  --captures /path/to/jpeg-captures \
+  --manifest /path/to/calibration-targets/manifest.json \
+  --output /path/to/capture-analysis
+```
+
+再利用每页五个灰阶锚点归一化曝光/白平衡漂移，拟合相机实测的
+`Standard → V-Log` 适配 LUT：
+
+```bash
+uv run lumix-lut-converter fit-captures \
+  --samples /path/to/capture-analysis/samples.csv \
+  --manifest /path/to/calibration-targets/manifest.json \
+  --output /path/to/capture-analysis
+```
+
+最后把 V-Log 创意 LUT 合成为 Standard Base 版本：
+
+```bash
+uv run lumix-lut-converter convert-empirical \
+  --source /path/to/source-luts \
+  --adapter /path/to/capture-analysis/STD_to_VLog_camera_fit_33.cube \
+  --output /path/to/output-standard
+```
+
+实拍后端会输出逐张定位叠加图、原始采样 CSV、拟合报告和转换清单。固定白平衡、
+固定焦点以及整套统一曝光仍是首选；若需要补暗部，应另拍一整套统一的 +2 EV 组。
 
 ## 限制
 

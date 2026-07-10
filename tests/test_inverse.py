@@ -1,6 +1,6 @@
 import numpy as np
 
-from lumix_lut_converter.inverse import invert_v709_lut, legalise_rgb
+from lumix_lut_converter.inverse import invert_lut, invert_v709_lut, legalise_rgb
 from lumix_lut_converter.lut import LUT3D, cube_grid
 from lumix_lut_converter.metrics import validate_inverse
 
@@ -25,3 +25,11 @@ def test_inverse_solver_handles_non_linear_reference() -> None:
     result = invert_v709_lut(reference, output_size=7, max_iterations=18)
     metrics = validate_inverse(result)
     assert metrics.rgb_error_p99 < 2.0e-5
+
+
+def test_generic_lut_inverse() -> None:
+    grid = cube_grid(9)
+    reference = LUT3D(np.power(grid, 0.9).reshape(9, 9, 9, 3))
+    targets = cube_grid(7)
+    result = invert_lut(reference, targets, max_iterations=18)
+    np.testing.assert_allclose(result.recovered, targets, atol=3.0e-5)

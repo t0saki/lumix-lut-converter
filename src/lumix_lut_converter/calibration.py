@@ -229,17 +229,17 @@ def _shooting_plan() -> str:
 - ISO 640；固定光圈；快门建议 1/10 秒或更慢，并让最亮色块不过曝。
 - 白平衡固定 6500 K，不能使用 AWB。
 - sRGB JPEG Fine + RAW；所有画质微调保持默认/归零。
-- 三组之间不得改变曝光、白平衡、焦点和构图。
+- 基础组的全部页面使用同一曝光；不得按页面单独调快门。
+- 三种 Photo Style 之间不得改变曝光、白平衡、焦点和构图。
 
 ## 三组照片
 
 按 `manifest.json` 的页面顺序，每页拍一张，共 13 张/组。
 
-### A_REF_VLOG
+### A_NATIVE_VLOG
 
 - Base Photo Style：V-Log
-- LUT：`camera_luts/CAL_REF_V709.cube`
-- LUT Opacity：100%
+- 不套 LUT；直接保留原生 V-Log 灰片。
 
 ### B_LIKE709
 
@@ -256,8 +256,9 @@ def _shooting_plan() -> str:
 
 ## 可选阴影加强组
 
-完成三组后，把曝光提高 +2 EV，重新拍三组；过曝色块会在拟合时自动丢弃，
-剩余色块用于增强暗部精度。不要更改白平衡和 Photo Style 参数。
+完成基础组后，把曝光统一提高 +2 EV，按相同顺序重新拍完整三组；不要逐页调曝光。
+过曝色块会在拟合时自动丢弃，剩余色块用于增强暗部精度。不要更改白平衡、
+焦点、构图和 Photo Style 参数。
 
 ## HDR/自然照片
 
@@ -381,12 +382,12 @@ def generate_calibration_targets(
 
     manifest = {
         "format_version": 1,
-        "purpose": "Paired LUMIX S9 V-Log/V709, Like709 and Standard pipeline calibration",
+        "purpose": "Paired LUMIX S9 native V-Log, Like709 and Standard pipeline calibration",
         "encoding": "8-bit sRGB PNG with embedded sRGB ICC profile; SDR only",
         "canvas": {"width": width, "height": height, "background_rgb8": [48, 48, 48]},
         "cube_levels": [int(value) for value in cube_values],
         "capture_groups": [
-            "A_REF_VLOG: V-Log + CAL_REF_V709.cube at 100%",
+            "A_NATIVE_VLOG: V-Log, no LUT",
             "B_LIKE709: Like709, no LUT, Knee Off",
             "C_STANDARD: Standard, no LUT",
         ],

@@ -18,6 +18,14 @@ class InverseResult:
     iterations: int
 
 
+@dataclass(frozen=True)
+class LUTInverseResult:
+    coordinates: FloatArray
+    target: FloatArray
+    recovered: FloatArray
+    iterations: int
+
+
 def legalise_rgb(
     rgb: FloatArray,
     *,
@@ -54,10 +62,40 @@ def invert_v709_lut(
         denominator=denominator,
     )
 
+    inverse = invert_lut(
+        reference,
+        target_legal,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+    )
+    return InverseResult(
+        vlog_coordinates=inverse.coordinates,
+        target_full_range=target_full,
+        target_legal_range=target_legal,
+        recovered_legal_range=inverse.recovered,
+        iterations=inverse.iterations,
+    )
+
+
+def invert_lut(
+    reference: LUT3D,
+    target_rgb: FloatArray,
+    *,
+    max_iterations: int = 24,
+    tolerance: float = 2.0e-8,
+) -> LUTInverseResult:
+    """Numerically invert a 3D LUT for arbitrary target RGB coordinates."""
+
+    target = np.asarray(target_rgb, dtype=np.float64)
+    original_shape = target.shape
+    if not original_shape or original_shape[-1] != 3:
+        raise ValueError("Target RGB must end with a three-channel dimension")
+    target = target.reshape(-1, 3)
+
     reference_inputs = cube_grid(reference.size)
     reference_outputs = reference.table.reshape(-1, 3)
     tree = cKDTree(reference_outputs)
-    _, nearest = tree.query(target_legal, workers=-1)
+    _, nearest = tree.query(target, workers=-1)
     points = reference_inputs[nearest].copy()
     best_points = points.copy()
     best_squared_error = np.full(len(points), np.inf, dtype=np.float64)
@@ -69,7 +107,7 @@ def invert_v709_lut(
     for iteration in range(max_iterations):
         completed_iterations = iteration + 1
         current = tetrahedral_interpolation(reference, points)
-        residual = current - target_legal
+        residual = current - target
         squared_error = np.einsum("ij,ij->i", residual, residual)
         improved = squared_error < best_squared_error
         best_squared_error[improved] = squared_error[improved]
@@ -106,7 +144,7 @@ def invert_v709_lut(
         for scale in (1.0, 0.5, 0.25, 0.125):
             candidate = np.clip(points - scale * step, 0.0, 1.0)
             candidate_residual = (
-                tetrahedral_interpolation(reference, candidate) - target_legal
+                tetrahedral_interpolation(reference, candidate) - target
             )
             error = np.einsum("ij,ij->i", candidate_residual, candidate_residual)
             choose = error < candidate_error
@@ -118,16 +156,15 @@ def invert_v709_lut(
         points = candidate_points
 
     final_current = tetrahedral_interpolation(reference, points)
-    final_residual = final_current - target_legal
+    final_residual = final_current - target
     final_squared_error = np.einsum("ij,ij->i", final_residual, final_residual)
     improved = final_squared_error < best_squared_error
     best_points[improved] = points[improved]
     recovered = tetrahedral_interpolation(reference, best_points)
 
-    return InverseResult(
-        vlog_coordinates=best_points,
-        target_full_range=target_full,
-        target_legal_range=target_legal,
-        recovered_legal_range=recovered,
+    return LUTInverseResult(
+        coordinates=best_points.reshape(original_shape),
+        target=target.reshape(original_shape),
+        recovered=recovered.reshape(original_shape),
         iterations=completed_iterations,
     )

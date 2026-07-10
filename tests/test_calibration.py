@@ -15,6 +15,7 @@ def test_generate_calibration_targets(tmp_path: Path) -> None:
         cube_levels=5,
     )
     manifest = json.loads(manifest_path.read_text())
+    assert manifest["capture_groups"][0] == "A_NATIVE_VLOG: V-Log, no LUT"
     assert len(manifest["pages"]) == 9
     assert [len(page["patches"]) for page in manifest["pages"][:4]] == [64, 64, 64, 198]
     assert all(len(page["patches"]) == 25 for page in manifest["pages"][4:])
