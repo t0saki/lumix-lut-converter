@@ -107,6 +107,9 @@ Panasonic 官方资料：
 完整的实验条件、V-Log 公式、矩阵、RAW 比值、色卡拟合误差和 A/B 指标见：
 [研究发现与方法说明](docs/research-findings.zh-CN.md)。
 
+如果更想从一次真实探索的时间线理解这些结论，可以阅读个人记录：
+[我为什么想把 V-Log LUT 转成 Standard：一次关于 LUMIX LUT、ISO 与色彩科学的业余探索](docs/blog-lumix-vlog-lut-iso.zh-CN.md)。
+
 ## 其他探索工具
 
 ### V-Log → Like709 Base
