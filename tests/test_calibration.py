@@ -24,6 +24,9 @@ def test_generate_calibration_targets(tmp_path: Path) -> None:
     image = Image.open(output / "targets" / page["filename"]).convert("RGB")
     x, y, width, height = patch["sample_rect"]
     assert image.getpixel((x + width // 2, y + height // 2)) == tuple(patch["rgb8"])
-    assert (output / "viewer.html").exists()
+    viewer = (output / "viewer.html").read_text()
+    assert "targets/" in viewer
+    assert 'id="label"' not in viewer
+    assert (output / "serve.command").exists()
     assert (output / "SHOOTING_PLAN.md").exists()
     assert (output / "checksums.sha256").exists()

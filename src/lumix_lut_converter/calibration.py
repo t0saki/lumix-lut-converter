@@ -185,22 +185,33 @@ def _sha256(path: Path) -> str:
 
 
 def _viewer_html(pages: list[dict[str, object]]) -> str:
-    filenames = [str(page["filename"]) for page in pages]
+    filenames = [f'targets/{page["filename"]}' for page in pages]
     return f"""<!doctype html>
 <html><head><meta charset=\"utf-8\"><title>LUMIX calibration targets</title>
 <style>html,body{{margin:0;background:#000;width:100%;height:100%;overflow:hidden}}
-img{{width:100vw;height:100vh;object-fit:contain;display:block}}
-#label{{position:fixed;left:16px;top:12px;color:white;background:#000a;padding:8px 12px;
-font:18px system-ui;border-radius:6px}}body.hide #label{{display:none}}</style></head>
-<body><img id=\"target\"><div id=\"label\"></div><script>
+img{{width:100vw;height:100vh;object-fit:contain;display:block}}</style></head>
+<body><img id=\"target\"><script>
 const pages={json.dumps(filenames)}; let index=0;
-const image=document.getElementById('target'), label=document.getElementById('label');
-function show(i){{index=(i+pages.length)%pages.length;image.src=pages[index];
-label.textContent=`${{index+1}}/${{pages.length}}  ${{pages[index]}}`;}}
+const image=document.getElementById('target');
+function show(i){{index=(i+pages.length)%pages.length;image.src=pages[index];}}
 addEventListener('keydown',e=>{{if(['ArrowRight',' ','PageDown'].includes(e.key))show(index+1);
-if(['ArrowLeft','PageUp'].includes(e.key))show(index-1);if(e.key==='h')document.body.classList.toggle('hide');
+if(['ArrowLeft','PageUp'].includes(e.key))show(index-1);
 if(e.key==='f')document.documentElement.requestFullscreen();}});show(0);
 </script></body></html>"""
+
+
+def _serve_command() -> str:
+    return """#!/bin/zsh
+set -e
+cd "$(dirname "$0")"
+PORT=8765
+python3 -m http.server "$PORT" --bind 127.0.0.1 &
+SERVER_PID=$!
+trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT INT TERM
+sleep 1
+open "http://127.0.0.1:${PORT}/viewer.html"
+wait "$SERVER_PID"
+"""
 
 
 def _shooting_plan() -> str:
@@ -209,7 +220,7 @@ def _shooting_plan() -> str:
 ## 屏幕
 
 - 使用 SDR sRGB/Rec.709 模式，关闭 HDR、动态对比度、节能和自动亮度。
-- 固定亮度并预热约 20 分钟；浏览器打开 `viewer.html`，按 `f` 全屏，方向键换页。
+- 固定亮度并预热约 20 分钟；双击 `serve.command` 启动本地网页，按 `f` 全屏，方向键换页。
 - 相机垂直正对屏幕并稍微虚焦，避免 QD-OLED 子像素产生摩尔纹。
 
 ## 相机固定设置
@@ -387,10 +398,13 @@ def generate_calibration_targets(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     (output_root / "viewer.html").write_text(_viewer_html(pages), encoding="utf-8")
+    serve_path = output_root / "serve.command"
+    serve_path.write_text(_serve_command(), encoding="utf-8")
+    serve_path.chmod(0o755)
     (output_root / "SHOOTING_PLAN.md").write_text(_shooting_plan(), encoding="utf-8")
     checksums = []
     for path in sorted(output_root.rglob("*")):
-        if path.is_file() and path.name != "checksums.sha256":
+        if path.is_file() and path.name not in {"checksums.sha256", ".DS_Store"}:
             checksums.append(f"{_sha256(path)}  {path.relative_to(output_root)}")
     (output_root / "checksums.sha256").write_text("\n".join(checksums) + "\n", encoding="utf-8")
     return manifest_path
