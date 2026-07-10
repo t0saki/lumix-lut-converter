@@ -9,6 +9,7 @@ from rich.table import Table
 from .calibration import generate_calibration_targets
 from .capture import analyze_calibration_captures
 from .converter import convert_collection
+from .cst import convert_collection_srgb_cst
 from .empirical import convert_collection_with_empirical_adapter, fit_empirical_std_to_vlog
 
 
@@ -148,5 +149,28 @@ def convert_empirical(
         f"Converted [bold]{summary.converted_count}[/bold] V-Log LUTs; "
         f"tagged [bold]{summary.copied_std_count}[/bold] existing Standard LUTs."
     )
+    console.print(f"Output: {summary.output_root}")
+    console.print(f"Manifest: {summary.manifest_path}")
+
+
+@app.command("convert-cst")
+def convert_cst(
+    source: Path = typer.Option(..., exists=True, file_okay=False, resolve_path=True),
+    output: Path = typer.Option(..., file_okay=False, resolve_path=True),
+    grid_size: int = typer.Option(33, min=2, max=65),
+    std_folder: str = typer.Option("5_STD-base"),
+) -> None:
+    """Rebase V-Log LUTs to Standard/sRGB with the official analytic CST."""
+    summary = convert_collection_srgb_cst(
+        source,
+        output,
+        output_size=grid_size,
+        std_folder=std_folder,
+    )
+    console.print(
+        f"Converted [bold]{summary.converted_count}[/bold] V-Log LUTs; "
+        f"tagged [bold]{summary.copied_std_count}[/bold] existing Standard LUTs."
+    )
+    console.print(f"Adapter: {summary.adapter_path}")
     console.print(f"Output: {summary.output_root}")
     console.print(f"Manifest: {summary.manifest_path}")

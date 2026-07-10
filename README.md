@@ -1,7 +1,7 @@
 # lumix-lut-converter
 
-把以 Panasonic V-Log/V-Gamut 为输入基底的创意 LUT，近似重建为可在 LUMIX
-机内以 `Like709` 为 Base Photo Style 使用的 33 点 `.cube`。
+把以 Panasonic V-Log/V-Gamut 为输入基底的创意 LUT，重建为可在 LUMIX
+机内以 `Like709` 或 `Standard/sRGB` 为 Base Photo Style 使用的 33 点 `.cube`。
 
 项目面向“已经烘焙完成、拿不到原始调色工程”的 LUT。它不能恢复 Standard/709
 管线已经裁掉的动态范围，但会尽量把基底转换误差压到可测量的最低程度。
@@ -77,6 +77,22 @@ uv run lumix-lut-converter generate-targets \
 
 ## 使用相机实拍标定 Standard Base
 
+### 推荐：官方公式 sRGB CST
+
+Panasonic 已公开 V-Log 分段函数以及 V-Gamut 到 BT.709 的矩阵。相机设为
+`Standard`、`sRGB`、ISO 100 后，可直接生成解析转换版本，无需拍摄整套色卡：
+
+```bash
+uv run lumix-lut-converter convert-cst \
+  --source /path/to/source-luts \
+  --output /path/to/output-standard-srgb
+```
+
+解析路径为：`sRGB EOTF → BT.709 到 V-Gamut 矩阵 → V-Log OETF → 原创意 LUT`。
+输出还包含一个不带创意风格的技术适配器，方便与原生 V-Log 灰片做 A/B 验证。
+
+### 可选：相机实拍后端
+
 先定位四角标记并提取每个色块：
 
 ```bash
@@ -111,6 +127,8 @@ uv run lumix-lut-converter convert-empirical \
 ## 限制
 
 - `Like709` 机内实现不保证与 VariCam 的 V709 技术 LUT 完全相同；
+- Standard Photo Style 的内部 tone curve 与 LUT 插入位置没有完整公开；解析 sRGB CST
+  仍建议以 V-Log ISO 640 对 Standard ISO 100 做一次固定白平衡 A/B 验证；
 - Like709 的 Knee、画质参数、白平衡等应保持统一；
 - 原 LUT 已包含的裁切、色域压缩和 17 点采样无法逆转；
 - ΔE00 验证衡量的是官方技术 LUT 的数值反演精度，不代表相机实拍的最终误差；
