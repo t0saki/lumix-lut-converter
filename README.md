@@ -63,6 +63,18 @@ uv run lumix-lut-converter convert \
 如果上一次由本项目启动的批处理被中断，可以增加 `--resume`，它只会重写对应的
 生成文件，并在完整结束后写入 manifest。
 
+## 生成相机校准目标
+
+```bash
+uv run lumix-lut-converter generate-targets \
+  --reference-zip /path/to/VLog_to_V709_forV35_EN.zip \
+  --output /path/to/calibration-targets \
+  --width 3840 --height 2160 --cube-levels 9
+```
+
+输出包含带 sRGB ICC 的 SDR PNG、全屏查看器、机器可读色块坐标、相机参考 LUT
+和三组拍摄清单，用于标定 S9 实际的 V-Log/V709、Like709 与 Standard 管线。
+
 ## 限制
 
 - `Like709` 机内实现不保证与 VariCam 的 V709 技术 LUT 完全相同；

@@ -6,6 +6,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from .calibration import generate_calibration_targets
 from .converter import convert_collection
 
 
@@ -56,3 +57,29 @@ def convert(
     )
     console.print(f"Output: {summary.output_root}")
     console.print(f"Manifest: {summary.manifest_path}")
+
+
+@app.command("generate-targets")
+def generate_targets(
+    output: Path = typer.Option(..., file_okay=False, resolve_path=True),
+    reference_zip: Path | None = typer.Option(
+        None,
+        exists=True,
+        dir_okay=False,
+        resolve_path=True,
+        help="Panasonic VLog_to_V709 ZIP; also creates a camera reference LUT.",
+    ),
+    width: int = typer.Option(3840, min=1280),
+    height: int = typer.Option(2160, min=720),
+    cube_levels: int = typer.Option(9, min=3, max=17),
+) -> None:
+    """Generate SDR display targets and a machine-readable calibration manifest."""
+    manifest = generate_calibration_targets(
+        output,
+        width=width,
+        height=height,
+        cube_levels=cube_levels,
+        reference_zip=reference_zip,
+    )
+    console.print(f"Calibration package: {manifest.parent}")
+    console.print(f"Manifest: {manifest}")
